@@ -66,5 +66,5 @@ curl -c cookies.txt -X POST http://localhost:8000/login \
   -H "Content-Type: application/json" \
   -d '{"username": "demo", "password": "demo1234"}'
 
-curl -b cookies.txt http://localhost:8000/tickets
+curl -b cookies.txt http://localhost:8000/tickets/queue
 ```
