@@ -15,7 +15,9 @@ router = APIRouter()
 @router.get("/users/myticket", response_model=list[TicketStruct])
 async def get_my_ticket( db: SessionDep,user: CurrentUser, limit: int = 50, offset: int = 0):
     tickets = db.scalars(
-        select(Ticket).where(Ticket.assigned_user == user.id).order_by(Ticket.deadline,Ticket.level.desc()).limit(limit).offset(offset)
+        select(Ticket).where(Ticket.assigned_user == user.id)
+        .order_by(Ticket.level.desc(),Ticket.deadline )
+        .limit(limit).offset(offset)
     ).all()
     return tickets
 
@@ -24,7 +26,7 @@ async def take_next_ticket(db: SessionDep, user: CurrentUser):
     ticket = db.scalar(
         select(Ticket)
         .where(Ticket.status == TicketStatus.OPEN)
-        .order_by(Ticket.deadline, Ticket.level.desc())
+        .order_by(Ticket.level.desc(),Ticket.deadline )
         .limit(1)
         .with_for_update(skip_locked=True)
     )
@@ -73,6 +75,29 @@ async def user_complaint(payload: UserComplaintIn, request: Request, db: Session
     return ticket
 
 
+@router.patch("/tickets/{ticket_id}/confirm", response_model=TicketStruct)
+async def finish_ticket(ticket_id: uuid.UUID, db: SessionDep):
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+    ticket.status = TicketStatus.CLOSED
+    ticket.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(ticket)
+    return ticket
+
+@router.patch("/tickets/{ticket_id}/pick", response_model=TicketStruct)
+async def pick_ticket(ticket_id: uuid.UUID, db: SessionDep, user: CurrentUser):
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+    ticket.status = TicketStatus.PROCESSING
+    ticket.assigned_user = user.id
+    ticket.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(ticket)
+    return ticket
+
 @router.post("/tickets", response_model=TicketStruct, status_code=status.HTTP_201_CREATED)
 async def create_ticket(payload: TicketCreate, db: SessionDep, user: CurrentUser):
     now = datetime.now(timezone.utc)
@@ -94,10 +119,12 @@ async def create_ticket(payload: TicketCreate, db: SessionDep, user: CurrentUser
     db.refresh(ticket)
     return ticket
 
-@router.get("/tickets", response_model=list[TicketStruct])
+@router.get("/tickets/queue", response_model=list[TicketStruct])
 async def list_tickets(db: SessionDep, limit: int = 50, offset: int = 0):
     tickets = db.scalars(
-        select(Ticket).order_by(Ticket.created_at.desc()).limit(limit).offset(offset)
+        select(Ticket)
+        .order_by(Ticket.level.desc(),Ticket.deadline )
+        .limit(limit).offset(offset)
     ).all()
     return tickets
 
@@ -119,29 +146,6 @@ async def update_ticket(ticket_id: uuid.UUID, payload: TicketUpdate, db: Session
     if "severity" in updates:
         ticket.deadline = compute_deadline(ticket.severity, ticket.created_at)
         ticket.level = SEVERITY_LEVEL[ticket.severity]
-    ticket.updated_at = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(ticket)
-    return ticket
-
-@router.patch("/tickets/{ticket_id}/finish", response_model=TicketStruct)
-async def finish_ticket(ticket_id: uuid.UUID, db: SessionDep):
-    ticket = db.get(Ticket, ticket_id)
-    if ticket is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
-    ticket.status = TicketStatus.CLOSED
-    ticket.updated_at = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(ticket)
-    return ticket
-
-@router.patch("/tickets/{ticket_id}/pick", response_model=TicketStruct)
-async def pick_ticket(ticket_id: uuid.UUID, db: SessionDep, user: CurrentUser):
-    ticket = db.get(Ticket, ticket_id)
-    if ticket is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
-    ticket.status = TicketStatus.PROCESSING
-    ticket.assigned_user = user.id
     ticket.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(ticket)
