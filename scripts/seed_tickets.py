@@ -1,10 +1,12 @@
 """Seed the ticket table with random sample data. Usage: python -m scripts.seed_tickets [count]"""
 import random
+import secrets
 import sys
 from datetime import datetime, timedelta, timezone
 
 from app.config.config import get_settings
 from app.config.database import Base, make_session_factory
+from argon2 import PasswordHasher
 from sqlalchemy import select
 
 from app.model.model_db import SEVERITY_LEVEL, Ticket, TicketIntent, TicketSeverity, TicketStatus, User, compute_deadline
@@ -21,6 +23,7 @@ SUMMARY_TEMPLATES = [
     "API returns 500 error on bulk import",
     "Account suspended without explanation",
 ]
+SYSTEM_USERNAME = "system"
 PRODUCTS = [None, "web", "mobile", "api", "billing-portal"]
 
 
@@ -51,9 +54,15 @@ def seed(count: int) -> None:
     engine, session_factory = make_session_factory(settings.database_uri)
     Base.metadata.create_all(engine)
     with session_factory() as db:
+        if db.scalar(select(User).where(User.username == SYSTEM_USERNAME)) is None:
+            # random password nobody knows, so the system user can't log in
+            db.add(User(
+                username=SYSTEM_USERNAME,
+                email="system@example.com",
+                password_hash=PasswordHasher().hash(secrets.token_urlsafe(32)),
+            ))
+            db.commit()
         user_ids = list(db.scalars(select(User.id)))
-        if not user_ids:
-            sys.exit("No users found. Register at least one user before seeding tickets.")
         db.add_all(random_ticket(user_ids) for _ in range(count))
         db.commit()
     print(f"Inserted {count} sample tickets into {engine.url.render_as_string(hide_password=True)}")
