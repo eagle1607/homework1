@@ -7,9 +7,9 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from ..dependencies import SessionDep, CurrentUser
-from ..model_db import User
-from ..schema import RegisterIn, LoginIn, RegisterOut
+from app.dependencies.dependencies import SessionDep, CurrentUser
+from app.model.model_db import User
+from app.model.schema import RegisterIn, LoginIn, RegisterOut
 
 ACCESS_TOKEN_TTL = timedelta(hours=12)
 
@@ -18,7 +18,7 @@ password_hasher = PasswordHasher()
 router = APIRouter()
 
 
-@router.get("/api/user")
+@router.get("/api/user", response_model=list[RegisterOut])
 async def users(db: SessionDep):
     query = select(User)
     return db.scalars(query).all()

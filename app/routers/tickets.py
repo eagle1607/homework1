@@ -1,13 +1,13 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Request, status
+from sqlalchemy import func, select
 
-from ..dependencies import SessionDep, CurrentUser
-from ..model_db import Ticket, compute_deadline, TicketIntent, SEVERITY_LEVEL, TicketStatus
-from ..schema import TicketCreate, TicketUpdate, TicketStruct, UserComplaintIn
-from ..ticket_service import handle_client_message
+from app.dependencies.dependencies import SessionDep, CurrentUser
+from app.model.model_db import Ticket, compute_deadline, TicketIntent, SEVERITY_LEVEL, TicketStatus
+from app.model.schema import TicketCreate, TicketUpdate, TicketStruct, UserComplaintIn
+from app.service.ticket_service import handle_client_message
 
 router = APIRouter()
 
@@ -38,7 +38,16 @@ async def take_next_ticket(db: SessionDep, user: CurrentUser):
     return ticket
 
 @router.post("/users/complain", response_model=TicketStruct, status_code=status.HTTP_201_CREATED)
-async def user_complaint(payload: UserComplaintIn, db: SessionDep, user: CurrentUser):
+async def user_complaint(payload: UserComplaintIn, request: Request, db: SessionDep, user: CurrentUser):
+    # ponytail: counts all tickets the user created in the last hour, not only AI calls; add a request log table if that matters
+    limit = request.app.state.settings.ai_max_request_per_hour
+    if limit:
+        since = datetime.now(timezone.utc) - timedelta(hours=1)
+        recent = db.scalar(
+            select(func.count()).select_from(Ticket).where(Ticket.related_user == user.id, Ticket.created_at >= since)
+        )
+        if recent >= limit:
+            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many requests, try again later")
     try :
         tick = await handle_client_message(payload.content)
     except Exception:
@@ -109,6 +118,7 @@ async def update_ticket(ticket_id: uuid.UUID, payload: TicketUpdate, db: Session
         setattr(ticket, field, value)
     if "severity" in updates:
         ticket.deadline = compute_deadline(ticket.severity, ticket.created_at)
+        ticket.level = SEVERITY_LEVEL[ticket.severity]
     ticket.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(ticket)

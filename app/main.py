@@ -2,10 +2,10 @@ from contextlib import asynccontextmanager #lưu cache session
 
 from fastapi import FastAPI, Request
 
-from app.config import Settings, get_settings
-from app.database import Base, make_session_factory
+from app.config.config import Settings, get_settings
+from app.config.database import Base, make_session_factory
 
-from .middleware import AuthMiddleware
+from app.middleware.middleware import AuthMiddleware
 from .routers import auth, tickets
 
 
@@ -16,6 +16,8 @@ async def lifespan(app: FastAPI):
     app.state.engine.dispose()
 
 def create_app(settings: Settings):
+    if not settings.jwt_secret:
+        raise ValueError("JWT_SECRET not set")
     app = FastAPI(lifespan=lifespan)
     engine, session_factory = make_session_factory(settings.database_uri)
     app.state.engine = engine

@@ -20,7 +20,7 @@ def get_settings() -> Settings:
         openai_api_key=os.getenv("OPENAI_API_KEY", ''),
         openai_model=os.getenv("OPENAI_MODEL", ''),
         ai_mode=os.getenv("AI_MODE", ''),
-        cookie_secure= bool(os.getenv("COOKIE_SECURE",'')),
+        cookie_secure=os.getenv("COOKIE_SECURE", "").lower() == "true",
         ai_max_request_per_hour=int(os.getenv("AI_MAX_REQUEST_PER_HOUR", '0')),
         jwt_secret=os.getenv("JWT_SECRET", ''),
     )

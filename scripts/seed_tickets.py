@@ -3,11 +3,11 @@ import random
 import sys
 from datetime import datetime, timedelta, timezone
 
-from app.config import get_settings
-from app.database import Base, make_session_factory
+from app.config.config import get_settings
+from app.config.database import Base, make_session_factory
 from sqlalchemy import select
 
-from app.model_db import SEVERITY_LEVEL, Ticket, TicketIntent, TicketSeverity, TicketStatus, User, compute_deadline
+from app.model.model_db import SEVERITY_LEVEL, Ticket, TicketIntent, TicketSeverity, TicketStatus, User, compute_deadline
 
 SUMMARY_TEMPLATES = [
     "Customer cannot log in to their account",

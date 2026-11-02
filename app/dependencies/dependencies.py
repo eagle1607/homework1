@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from .model_db import User
+from app.model.model_db import User
 
 def get_db(request: Request):
     with request.app.state.session_factory() as db:

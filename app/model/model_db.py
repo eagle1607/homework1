@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 from enum import Enum
 
 import uuid_utils
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, String, Uuid, Integer, ForeignKey, true
+from sqlalchemy import Boolean, DateTime, Enum as SAEnum, String, Uuid, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
-from .database import Base
+from app.config.database import Base
 
 
 class TicketIntent(str, Enum):
@@ -87,6 +87,6 @@ class Ticket(Base):
     product: Mapped[str | None] = mapped_column(String, nullable=True)
     summary: Mapped[str] = mapped_column(String(200))
     needs_human_review: Mapped[bool] = mapped_column(Boolean, index=True)
-    deadline:Mapped[datetime] = mapped_column(DateTime, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, index=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    deadline:Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
