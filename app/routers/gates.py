@@ -20,12 +20,12 @@ def _get_or_404(db, gate_id: uuid.UUID) -> Gate:
     return gate
 
 
-def _commit(db) -> None:
+def _commit(db, detail: str = "Gate name already exists") -> None:
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Gate name already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
 
 
 @router.get("", response_model=list[GateDTO])
@@ -64,7 +64,7 @@ async def update_gate(gate_id: uuid.UUID, payload: GateUpdate, db: SessionDep):
 @router.delete("/{gate_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_gate(gate_id: uuid.UUID, db: SessionDep):
     db.delete(_get_or_404(db, gate_id))
-    db.commit()
+    _commit(db, "Gate still has slots; close it instead (status CLOSED)")
 
 
 async def _parse(content: str, gates) -> GateSlotRequest:

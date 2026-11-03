@@ -111,7 +111,7 @@ class Gate(Base):
 class GateSlot(Base):
     __tablename__ = "gate_slot"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=_uuid7)
-    gate: Mapped[str] = mapped_column(String, index=True)
+    gate: Mapped[str] = mapped_column(ForeignKey("gate.name", onupdate="CASCADE", ondelete="RESTRICT"), index=True)
     status: Mapped[GateSlotStatus] = mapped_column(SAEnum(GateSlotStatus, values_callable=lambda enum: [e.value for e in enum]), index=True)
     start: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     end: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
