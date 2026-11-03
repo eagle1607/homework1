@@ -6,7 +6,7 @@ from app.config.config import Settings, get_settings
 from app.config.database import Base, make_session_factory
 
 from app.middleware.middleware import AuthMiddleware
-from .routers import auth, tickets
+from .routers import auth, gates, tickets
 
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ def create_app(settings: Settings):
 
     app.include_router(auth.router)
     app.include_router(tickets.router)
+    app.include_router(gates.router)
     return app
 
 

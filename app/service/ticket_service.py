@@ -5,7 +5,7 @@ from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from openai import OpenAIError
 from pydantic import SecretStr
-from app.model.model_db import SEVERITY_LIST, INTENT_LIST
+from app.model.model_db import SEVERITY_LIST, INTENT_LIST, GateSlot
 from app.model.schema import TicketCreate
 
 

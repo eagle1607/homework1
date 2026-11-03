@@ -57,6 +57,12 @@ python -m scripts.seed_tickets 200
 - Lần chạy đầu, script tự tạo user `system` (mật khẩu ngẫu nhiên, không đăng nhập được) để gắn ticket. Chạy lại không tạo trùng.
 - Ticket được tạo ngẫu nhiên intent, severity, status trong 90 ngày gần nhất và gán cho các user đang có (gồm `system` và user bạn đã đăng ký).
 
+Seed 2 gate `A`, `B` (chạy lại không tạo trùng):
+
+```bash
+python -m scripts.seed_gates
+```
+
 ## Gọi API cần đăng nhập
 
 Đăng nhập trả về cookie `access_token`; các API còn lại cần cookie này:

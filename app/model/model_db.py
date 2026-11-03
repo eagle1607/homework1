@@ -19,6 +19,15 @@ class TicketStatus(str, Enum):
     PROCESSING = "PROCESSING"
     CLOSED = "CLOSED"
 
+class GateStatus(str, Enum):
+    AVAILABLE = "AVAILABLE"
+    CLOSED = "CLOSED"
+
+class GateSlotStatus(str, Enum):
+    READY = "READY"
+    FINISHED = "FINISHED"
+    CANCELED = "CANCELED"
+
 class TicketSeverity(str, Enum):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
@@ -88,5 +97,24 @@ class Ticket(Base):
     summary: Mapped[str] = mapped_column(String(200))
     needs_human_review: Mapped[bool] = mapped_column(Boolean, index=True)
     deadline:Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+class Gate(Base):
+    __tablename__ = "gate"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=_uuid7)
+    name: Mapped[str] = mapped_column(String, unique=True, index=True)
+    status: Mapped[GateStatus] = mapped_column(
+        SAEnum(GateStatus, values_callable=lambda enum: [e.value for e in enum]), index=True
+    )
+
+class GateSlot(Base):
+    __tablename__ = "gate_slot"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=_uuid7)
+    gate: Mapped[str] = mapped_column(String, index=True)
+    status: Mapped[GateSlotStatus] = mapped_column(SAEnum(GateSlotStatus, values_callable=lambda enum: [e.value for e in enum]), index=True)
+    start: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    end: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    assigned_user: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
